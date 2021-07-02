@@ -5,11 +5,11 @@ import android.os.Bundle
 import androidx.databinding.Bindable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.google.android.gms.maps.LocationSource.OnLocationChangedListener
 import dagger.hilt.android.scopes.ActivityScoped
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import org.owntracks.android.data.repos.ContactsRepo
+import org.owntracks.android.data.repos.LocationRepo
 import org.owntracks.android.location.*
 import org.owntracks.android.model.FusedContact
 import org.owntracks.android.model.messages.MessageClear
@@ -25,6 +25,7 @@ import javax.inject.Inject
 @ActivityScoped
 class MapViewModel @Inject constructor(
     private val contactsRepo: ContactsRepo,
+    private val locationRepo: LocationRepo,
     private val locationProcessor: LocationProcessor,
     private val messageProcessor: MessageProcessor
 ) : BaseViewModel<MapMvvm.View>(), MapMvvm.ViewModel<MapMvvm.View> {
@@ -32,7 +33,6 @@ class MapViewModel @Inject constructor(
     @get:Bindable
     override var activeContact: FusedContact? = null
         private set
-    private var onLocationChangedListener: OnLocationChangedListener? = null
     private val liveContact = MutableLiveData<FusedContact?>()
     private val liveBottomSheetHidden = MutableLiveData<Boolean>()
     private val liveCamera = MutableLiveData<LatLng>()
@@ -76,9 +76,7 @@ class MapViewModel @Inject constructor(
             if (mode == VIEW_DEVICE && liveCamera.value != locationResult.lastLocation.toLatLng()) {
                 liveCamera.postValue(locationResult.lastLocation.toLatLng())
             }
-            if (onLocationChangedListener != null) {
-                onLocationChangedListener!!.onLocationChanged(locationResult.lastLocation)
-            }
+            locationRepo.setMapLocation(locationResult.lastLocation)
         }
 
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
